@@ -41,13 +41,17 @@
     <color name="guide_news_bg">#3243A047</color>
     <color name="guide_kids_bg">#32039BE5</color>
 
-    <!-- button_default -->
+    <!-- button_default: this is what the classic (non-Compose) Details page
+         buttons — Play, Favorite, etc. — actually use. The Compose color
+         scheme in colorScheme.kt does not reach this screen at all, so it
+         needs its own ElegantFin-accent highlight to match, not just the
+         legacy neutral-grey focus state. -->
     <color name="button_default_normal_background">#B3747474</color>
     <color name="button_default_disabled_background">#33747474</color>
-    <color name="button_default_highlight_background">#E6CCCCCC</color>
+    <color name="button_default_highlight_background">#E6756FE2</color>
     <color name="button_default_normal_text">#DDDDDD</color>
     <color name="button_default_disabled_text">#686868</color>
-    <color name="button_default_highlight_text">#444444</color>
+    <color name="button_default_highlight_text">#FFFFFF</color>
     <color name="button_default_activated_text">#CC3333</color>
     <color name="button_default_progress_background">#33000000</color>
 

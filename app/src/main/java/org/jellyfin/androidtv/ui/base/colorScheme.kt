@@ -37,7 +37,11 @@ fun colorScheme(): ColorScheme = ColorScheme(
 	listHeadline = Color(0xFFD1D5DB), // --textColor
 	listCaption = Color(0xFF9CA3AF), // --dimTextColor
 	listButton = Color.Transparent,
-	listButtonFocused = Color(0xFF1F2937), // --tableBodyColor
+	// Must contrast clearly against the dark background — this is the ONLY
+	// visual cue for "which row is selected" in a settings/list screen, so a
+	// dark neutral tone (tableBodyColor) here is nearly invisible. Use the
+	// accent color instead, same as a focused button.
+	listButtonFocused = Color(0xFF756FE2), // --accentHoverColor
 	surface = Color(0xFF1F2937), // --tableBodyColor
 	scrim = Color.Black.copy(alpha = 0.67f),
 )
