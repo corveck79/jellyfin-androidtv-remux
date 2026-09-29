@@ -685,6 +685,16 @@ public class PlaybackController implements PlaybackControllerNotifiable {
             }
         }
         setDefaultAudioIndex(response);
+
+        // Without a pick on the details page: never Russian subtitles, and English ones when the
+        // audio isn't English and there is no saved preference
+        if (selection == null || selection.getSubtitleStreamIndex() == null) {
+            List<MediaStream> streams = response.getMediaSource().getMediaStreams();
+            if (lastSubtitleLanguage == null || TrackPreferences.isRussianStream(streams, mCurrentOptions.getSubtitleStreamIndex())) {
+                int preferredSubtitle = TrackPreferences.defaultSubtitle(streams, mDefaultAudioIndex);
+                mCurrentOptions.setSubtitleStreamIndex(preferredSubtitle < 0 ? null : preferredSubtitle);
+            }
+        }
         Timber.i("default audio index set to %s remote default %s", mDefaultAudioIndex, response.getMediaSource().getDefaultAudioStreamIndex());
         Timber.i("default sub index set to %s remote default %s", mCurrentOptions.getSubtitleStreamIndex(), response.getMediaSource().getDefaultSubtitleStreamIndex());
 
@@ -798,8 +808,11 @@ public class PlaybackController implements PlaybackControllerNotifiable {
         Integer remoteDefault = info.getMediaSource().getDefaultAudioStreamIndex();
         Integer bestGuess = bestGuessAudioTrack(info.getMediaSource());
 
-        if (lastChosenLanguage != null)
+        Integer preferred = TrackPreferences.defaultAudio(info.getMediaSource().getMediaStreams(), remoteDefault);
+        if (lastChosenLanguage != null && !TrackPreferences.isRussianStream(info.getMediaSource().getMediaStreams(), lastChosenLanguage))
             mDefaultAudioIndex = lastChosenLanguage;
+        else if (preferred != null)
+            mDefaultAudioIndex = preferred;
         else if (remoteDefault != null)
             mDefaultAudioIndex = remoteDefault;
         else if (bestGuess != null)

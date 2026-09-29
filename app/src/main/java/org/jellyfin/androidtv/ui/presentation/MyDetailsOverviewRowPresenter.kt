@@ -5,6 +5,7 @@ import androidx.core.view.isVisible
 import androidx.leanback.widget.RowPresenter
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.ui.DetailRowView
+import org.jellyfin.androidtv.ui.playback.TrackPreferences
 import org.jellyfin.androidtv.ui.itemdetail.MyDetailsOverviewRow
 import org.jellyfin.androidtv.util.InfoLayoutHelper
 import org.jellyfin.androidtv.util.MarkdownRenderer
@@ -93,12 +94,11 @@ class MyDetailsOverviewRowPresenter(
 			binding.fdAudioPicker.isVisible = audio.size > 1
 			binding.fdSubtitlePicker.isVisible = subtitles.isNotEmpty()
 
-			val audioIndex = row.selectedAudioIndex ?: source.defaultAudioStreamIndex ?: audio.firstOrNull()?.index
-			binding.fdAudioText.text = audio.firstOrNull { it.index == audioIndex }?.let(::streamTitle)
+			val tracks = TrackPreferences.resolve(source, row.selectedAudioIndex, row.selectedSubtitleIndex)
+			binding.fdAudioText.text = audio.firstOrNull { it.index == tracks.audio }?.let(::streamTitle)
 			binding.fdAudioPicker.setOnClickListener { row.onAudioClick?.invoke(it) }
 
-			val subtitleIndex = row.selectedSubtitleIndex ?: source.defaultSubtitleStreamIndex
-			binding.fdSubtitleText.text = subtitles.firstOrNull { it.index == subtitleIndex }?.let(::streamTitle)
+			binding.fdSubtitleText.text = subtitles.firstOrNull { it.index == tracks.subtitle }?.let(::streamTitle)
 				?: binding.root.context.getString(R.string.lbl_none)
 			binding.fdSubtitlePicker.setOnClickListener { row.onSubtitleClick?.invoke(it) }
 		}

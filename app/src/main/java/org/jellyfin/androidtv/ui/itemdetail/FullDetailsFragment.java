@@ -63,6 +63,7 @@ import org.jellyfin.androidtv.ui.navigation.NavigationRepository;
 import org.jellyfin.androidtv.ui.playback.MediaManager;
 import org.jellyfin.androidtv.ui.playback.PlaybackLauncher;
 import org.jellyfin.androidtv.ui.playback.PlaybackSelection;
+import org.jellyfin.androidtv.ui.playback.TrackPreferences;
 import org.jellyfin.androidtv.ui.presentation.CardPresenter;
 import org.jellyfin.androidtv.ui.presentation.CustomListRowPresenter;
 import org.jellyfin.androidtv.ui.presentation.InfoCardPresenter;
@@ -1101,8 +1102,11 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
     private void publishPlaybackSelection() {
         List<MediaSourceInfo> sources = mDetailsOverviewRow.getItem().getMediaSources();
         int sourceIndex = mDetailsOverviewRow.getSelectedMediaSourceIndex();
-        String mediaSourceId = sources != null && sourceIndex < sources.size() ? sources.get(sourceIndex).getId() : null;
-        PlaybackSelection.set(mBaseItem.getId(), mediaSourceId, mDetailsOverviewRow.getSelectedAudioIndex(), mDetailsOverviewRow.getSelectedSubtitleIndex());
+        if (sources == null || sourceIndex >= sources.size()) return;
+
+        MediaSourceInfo source = sources.get(sourceIndex);
+        TrackPreferences.Tracks tracks = TrackPreferences.resolve(source, mDetailsOverviewRow.getSelectedAudioIndex(), mDetailsOverviewRow.getSelectedSubtitleIndex());
+        PlaybackSelection.set(mBaseItem.getId(), source.getId(), tracks.getAudio(), tracks.getSubtitle());
     }
 
     private static final int NO_SUBTITLES_MENU_ID = 100000;
@@ -1118,8 +1122,8 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
 
         boolean isSubtitle = type == MediaStreamType.SUBTITLE;
         MediaSourceInfo source = sources.get(sourceIndex);
-        Integer current = isSubtitle ? mDetailsOverviewRow.getSelectedSubtitleIndex() : mDetailsOverviewRow.getSelectedAudioIndex();
-        if (current == null) current = isSubtitle ? source.getDefaultSubtitleStreamIndex() : source.getDefaultAudioStreamIndex();
+        TrackPreferences.Tracks tracks = TrackPreferences.resolve(source, mDetailsOverviewRow.getSelectedAudioIndex(), mDetailsOverviewRow.getSelectedSubtitleIndex());
+        Integer current = isSubtitle ? Integer.valueOf(tracks.getSubtitle()) : tracks.getAudio();
 
         PopupMenu menu = new PopupMenu(requireContext(), anchor, Gravity.END);
         if (isSubtitle) {
