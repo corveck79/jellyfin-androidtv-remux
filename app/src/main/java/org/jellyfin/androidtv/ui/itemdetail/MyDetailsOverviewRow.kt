@@ -1,5 +1,6 @@
 package org.jellyfin.androidtv.ui.itemdetail
 
+import android.view.View
 import androidx.core.view.isVisible
 import androidx.leanback.widget.Row
 import org.jellyfin.androidtv.data.model.InfoItem
@@ -14,6 +15,7 @@ class MyDetailsOverviewRow @JvmOverloads constructor(
 	var infoItem2: InfoItem? = null,
 	var infoItem3: InfoItem? = null,
 	var selectedMediaSourceIndex: Int = 0,
+	var onSourceClick: ((View) -> Unit)? = null,
 ) : Row() {
 	private val _actions = mutableListOf<TextUnderButton>()
 	val actions get() = _actions.toList()

@@ -109,7 +109,6 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
     private int BUTTON_SIZE;
 
     TextUnderButton mResumeButton;
-    private TextUnderButton mVersionsButton;
     TextUnderButton mPrevButton;
     private TextUnderButton mRecordButton;
     private TextUnderButton mRecSeriesButton;
@@ -417,6 +416,13 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
             posterHeight = aspect > 1 ? Utils.convertDpToPixel(requireContext(), 160) : Utils.convertDpToPixel(requireContext(), item.getType() == BaseItemKind.PERSON || item.getType() == BaseItemKind.MUSIC_ARTIST ? 300 : 200);
 
             mDetailsOverviewRow = new MyDetailsOverviewRow(item);
+            mDetailsOverviewRow.setOnSourceClick(v -> {
+                if (versions == null && mBaseItem.getMediaSources() != null) {
+                    versions = new ArrayList<>(mBaseItem.getMediaSources());
+                }
+                if (versions != null) addVersionsMenu(v);
+                return kotlin.Unit.INSTANCE;
+            });
 
             String primaryImageUrl = imageHelper.getValue().getLogoImageUrl(mBaseItem, 600);
             if (primaryImageUrl == null) {
@@ -839,22 +845,6 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
                 mDetailsOverviewRow.addAction(imix);
             }
         }
-        //Video versions button
-        if (mBaseItem.getMediaSources() != null && mBaseItem.getMediaSources().size() > 1) {
-            mVersionsButton = TextUnderButton.create(requireContext(), R.drawable.ic_guide, buttonSize, 0, getString(R.string.select_version), new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (versions != null) {
-                        addVersionsMenu(v);
-                    } else {
-                        versions = new ArrayList<>(mBaseItem.getMediaSources());
-                        addVersionsMenu(v);
-                    }
-                }
-            });
-            mDetailsOverviewRow.addAction(mVersionsButton);
-        }
-
         if (TrailerUtils.hasPlayableTrailers(requireContext(), mBaseItem)) {
             trailerButton = TextUnderButton.create(requireContext(), R.drawable.ic_trailer, buttonSize, 0, getString(R.string.lbl_play_trailers), new View.OnClickListener() {
                 @Override
@@ -1108,7 +1098,6 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
 
                     mBaseItem = item;
                     mDorPresenter.getViewHolder().setItem(mDetailsOverviewRow);
-                    if (mVersionsButton != null) mVersionsButton.requestFocus();
                     return null;
                 });
                 return true;

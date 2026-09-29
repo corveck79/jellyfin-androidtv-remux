@@ -8,6 +8,9 @@ import org.jellyfin.androidtv.ui.itemdetail.MyDetailsOverviewRow
 import org.jellyfin.androidtv.util.InfoLayoutHelper
 import org.jellyfin.androidtv.util.MarkdownRenderer
 import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.MediaSourceInfo
+import org.jellyfin.sdk.model.api.MediaStreamType
+import kotlin.math.roundToInt
 
 class MyDetailsOverviewRowPresenter(
 	private val markdownRenderer: MarkdownRenderer,
@@ -19,7 +22,10 @@ class MyDetailsOverviewRowPresenter(
 		private val binding get() = detailRowView.binding
 
 		fun setItem(row: MyDetailsOverviewRow) {
-			setTitle(row.item.name)
+			val episodeNumber = row.item.indexNumber?.takeIf { row.item.type == BaseItemKind.EPISODE }
+			setTitle(if (episodeNumber != null) "$episodeNumber. ${row.item.name}" else row.item.name)
+			binding.fdSubtitle.text = row.item.seasonName?.takeIf { row.item.type == BaseItemKind.EPISODE }?.let { "- $it" }
+			binding.fdSubtitle.isVisible = !binding.fdSubtitle.text.isNullOrEmpty()
 
 			InfoLayoutHelper.addInfoRow(view.context, row.item, row.item.mediaSources?.getOrNull(row.selectedMediaSourceIndex), binding.fdMainInfoRow, false)
 			binding.fdGenreRow.text = row.item.genres?.joinToString(" / ")
@@ -42,12 +48,33 @@ class MyDetailsOverviewRowPresenter(
 				binding.fdGenreRow.isVisible = false
 			}
 
+			setSource(row)
+
 			binding.fdButtonRow.removeAllViews()
 			for (button in row.actions) {
 				val parent = button.parent
 				if (parent is ViewGroup) parent.removeView(button)
 
 				binding.fdButtonRow.addView(button)
+			}
+		}
+
+		private fun setSource(row: MyDetailsOverviewRow) {
+			val sources = row.item.mediaSources.orEmpty()
+			val source = sources.getOrNull(row.selectedMediaSourceIndex)
+			binding.fdSourceCard.isVisible = source != null
+			if (source == null) return
+
+			binding.fdSourceText.text = source.name
+			binding.fdMediaInfoText.text = describeMediaSource(source)
+
+			val picker = binding.fdSourcePicker
+			if (sources.size > 1) {
+				picker.isFocusable = true
+				picker.setOnClickListener { row.onSourceClick?.invoke(it) }
+			} else {
+				picker.isFocusable = false
+				picker.setOnClickListener(null)
 			}
 		}
 
@@ -86,4 +113,20 @@ class MyDetailsOverviewRowPresenter(
 	}
 
 	override fun onSelectLevelChanged(holder: RowPresenter.ViewHolder) = Unit
+}
+
+/** Summarises the video stream and play method, e.g. "1080p H264 6.3 Mbps (Direct Play)". */
+private fun describeMediaSource(source: MediaSourceInfo): String {
+	val video = source.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+	val parts = buildList {
+		video?.height?.let { add("${it}p") }
+		video?.codec?.let { add(it.uppercase()) }
+		(video?.bitRate ?: source.bitrate)?.let { add("%.1f Mbps".format(it / 1_000_000.0)) }
+	}
+	val method = when {
+		source.supportsDirectPlay -> "Direct Play"
+		source.supportsDirectStream -> "Direct Stream"
+		else -> "Transcode"
+	}
+	return (parts + "($method)").joinToString(" ")
 }
