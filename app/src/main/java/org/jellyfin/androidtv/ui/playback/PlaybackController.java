@@ -202,6 +202,15 @@ public class PlaybackController implements PlaybackControllerNotifiable {
             if (mediaSources == null || mediaSources.isEmpty()) {
                 return null;
             } else {
+                // Prefer the version picked on the details page
+                PlaybackSelection.Selection selection = PlaybackSelection.get(item.getId());
+                if (selection != null && selection.getMediaSourceId() != null) {
+                    for (MediaSourceInfo mediaSource : mediaSources) {
+                        if (selection.getMediaSourceId().equals(mediaSource.getId())) {
+                            return mediaSource;
+                        }
+                    }
+                }
                 // Prefer the media source with the same id as the item
                 for (MediaSourceInfo mediaSource : mediaSources) {
                     if (item.getId().equals(UUIDSerializerKt.toUUIDOrNull(mediaSource.getId()))) {

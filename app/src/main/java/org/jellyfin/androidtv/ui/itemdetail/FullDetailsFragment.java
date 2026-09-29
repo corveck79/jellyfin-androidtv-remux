@@ -495,6 +495,7 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
             mRowsAdapter = new MutableObjectAdapter<Row>(ps);
             mRowsFragment.setAdapter(mRowsAdapter);
             mRowsAdapter.add(detailsOverviewRow);
+            publishPlaybackSelection();
 
             updateInfo(detailsOverviewRow.getItem());
             addAdditionalRows(mRowsAdapter);
@@ -1093,6 +1094,17 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
         }
     }
 
+    /**
+     * Tells the player which version and tracks the details page currently shows, so that pressing
+     * play starts exactly that.
+     */
+    private void publishPlaybackSelection() {
+        List<MediaSourceInfo> sources = mDetailsOverviewRow.getItem().getMediaSources();
+        int sourceIndex = mDetailsOverviewRow.getSelectedMediaSourceIndex();
+        String mediaSourceId = sources != null && sourceIndex < sources.size() ? sources.get(sourceIndex).getId() : null;
+        PlaybackSelection.set(mBaseItem.getId(), mediaSourceId, mDetailsOverviewRow.getSelectedAudioIndex(), mDetailsOverviewRow.getSelectedSubtitleIndex());
+    }
+
     private static final int NO_SUBTITLES_MENU_ID = 100000;
 
     /**
@@ -1128,7 +1140,7 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
             if (isSubtitle) mDetailsOverviewRow.setSelectedSubtitleIndex(chosen);
             else mDetailsOverviewRow.setSelectedAudioIndex(chosen);
 
-            PlaybackSelection.set(mBaseItem.getId(), mDetailsOverviewRow.getSelectedAudioIndex(), mDetailsOverviewRow.getSelectedSubtitleIndex());
+            publishPlaybackSelection();
             mDorPresenter.getViewHolder().setItem(mDetailsOverviewRow);
             anchor.requestFocus();
             return true;
@@ -1151,14 +1163,9 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
                 mDetailsOverviewRow.setSelectedMediaSourceIndex(menuItem.getItemId());
                 mDetailsOverviewRow.setSelectedAudioIndex(null);
                 mDetailsOverviewRow.setSelectedSubtitleIndex(null);
-                PlaybackSelection.clear();
-                FullDetailsFragmentHelperKt.getItem(FullDetailsFragment.this, UUIDSerializerKt.toUUID(versions.get(mDetailsOverviewRow.getSelectedMediaSourceIndex()).getId()), item -> {
-                    if (item == null) return null;
-
-                    mBaseItem = item;
-                    mDorPresenter.getViewHolder().setItem(mDetailsOverviewRow);
-                    return null;
-                });
+                publishPlaybackSelection();
+                mDorPresenter.getViewHolder().setItem(mDetailsOverviewRow);
+                v.requestFocus();
                 return true;
             }
         });
