@@ -3,12 +3,14 @@ package org.jellyfin.androidtv.ui.presentation
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.leanback.widget.RowPresenter
+import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.ui.DetailRowView
 import org.jellyfin.androidtv.ui.itemdetail.MyDetailsOverviewRow
 import org.jellyfin.androidtv.util.InfoLayoutHelper
 import org.jellyfin.androidtv.util.MarkdownRenderer
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.MediaSourceInfo
+import org.jellyfin.sdk.model.api.MediaStream
 import org.jellyfin.sdk.model.api.MediaStreamType
 import kotlin.math.roundToInt
 
@@ -68,6 +70,8 @@ class MyDetailsOverviewRowPresenter(
 			binding.fdSourceText.text = source.name
 			binding.fdMediaInfoText.text = describeMediaSource(source)
 
+			setStreamPickers(row, source)
+
 			val picker = binding.fdSourcePicker
 			if (sources.size > 1) {
 				picker.isFocusable = true
@@ -76,6 +80,25 @@ class MyDetailsOverviewRowPresenter(
 				picker.isFocusable = false
 				picker.setOnClickListener(null)
 			}
+		}
+
+		private fun setStreamPickers(row: MyDetailsOverviewRow, source: MediaSourceInfo) {
+			val streams = source.mediaStreams.orEmpty()
+			val audio = streams.filter { it.type == MediaStreamType.AUDIO }
+			val subtitles = streams.filter { it.type == MediaStreamType.SUBTITLE }
+
+			binding.fdStreamPickers.isVisible = audio.size > 1 || subtitles.isNotEmpty()
+			binding.fdAudioPicker.isVisible = audio.size > 1
+			binding.fdSubtitlePicker.isVisible = subtitles.isNotEmpty()
+
+			val audioIndex = row.selectedAudioIndex ?: source.defaultAudioStreamIndex ?: audio.firstOrNull()?.index
+			binding.fdAudioText.text = audio.firstOrNull { it.index == audioIndex }?.let(::streamTitle)
+			binding.fdAudioPicker.setOnClickListener { row.onAudioClick?.invoke(it) }
+
+			val subtitleIndex = row.selectedSubtitleIndex ?: source.defaultSubtitleStreamIndex
+			binding.fdSubtitleText.text = subtitles.firstOrNull { it.index == subtitleIndex }?.let(::streamTitle)
+				?: binding.root.context.getString(R.string.lbl_none)
+			binding.fdSubtitlePicker.setOnClickListener { row.onSubtitleClick?.invoke(it) }
 		}
 
 		fun setTitle(title: String?) {
@@ -114,6 +137,12 @@ class MyDetailsOverviewRowPresenter(
 
 	override fun onSelectLevelChanged(holder: RowPresenter.ViewHolder) = Unit
 }
+
+fun streamTitle(stream: MediaStream): String =
+	stream.displayTitle?.takeIf { it.isNotBlank() }
+		?: stream.language?.takeIf { it.isNotBlank() }
+		?: stream.title?.takeIf { it.isNotBlank() }
+		?: "Track ${stream.index}"
 
 /** Summarises the video stream and play method, e.g. "1080p H264 6.3 Mbps (Direct Play)". */
 private fun describeMediaSource(source: MediaSourceInfo): String {

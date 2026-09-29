@@ -15,7 +15,11 @@ class MyDetailsOverviewRow @JvmOverloads constructor(
 	var infoItem2: InfoItem? = null,
 	var infoItem3: InfoItem? = null,
 	var selectedMediaSourceIndex: Int = 0,
+	var selectedAudioIndex: Int? = null,
+	var selectedSubtitleIndex: Int? = null,
 	var onSourceClick: ((View) -> Unit)? = null,
+	var onAudioClick: ((View) -> Unit)? = null,
+	var onSubtitleClick: ((View) -> Unit)? = null,
 ) : Row() {
 	private val _actions = mutableListOf<TextUnderButton>()
 	val actions get() = _actions.toList()

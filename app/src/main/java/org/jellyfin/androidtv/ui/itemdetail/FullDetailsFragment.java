@@ -62,11 +62,13 @@ import org.jellyfin.androidtv.ui.navigation.Destinations;
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository;
 import org.jellyfin.androidtv.ui.playback.MediaManager;
 import org.jellyfin.androidtv.ui.playback.PlaybackLauncher;
+import org.jellyfin.androidtv.ui.playback.PlaybackSelection;
 import org.jellyfin.androidtv.ui.presentation.CardPresenter;
 import org.jellyfin.androidtv.ui.presentation.CustomListRowPresenter;
 import org.jellyfin.androidtv.ui.presentation.InfoCardPresenter;
 import org.jellyfin.androidtv.ui.presentation.MutableObjectAdapter;
 import org.jellyfin.androidtv.ui.presentation.MyDetailsOverviewRowPresenter;
+import org.jellyfin.androidtv.ui.presentation.MyDetailsOverviewRowPresenterKt;
 import org.jellyfin.androidtv.util.CoroutineUtils;
 import org.jellyfin.androidtv.util.DateTimeExtensionsKt;
 import org.jellyfin.androidtv.util.ImageHelper;
@@ -85,6 +87,7 @@ import org.jellyfin.sdk.model.api.BaseItemKind;
 import org.jellyfin.sdk.model.api.BaseItemPerson;
 import org.jellyfin.sdk.model.api.MediaSourceInfo;
 import org.jellyfin.sdk.model.api.MediaStream;
+import org.jellyfin.sdk.model.api.MediaStreamType;
 import org.jellyfin.sdk.model.api.MediaType;
 import org.jellyfin.sdk.model.api.PersonKind;
 import org.jellyfin.sdk.model.api.SeriesTimerInfoDto;
@@ -156,6 +159,7 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         FragmentFullDetailsBinding binding = FragmentFullDetailsBinding.inflate(getLayoutInflater(), container, false);
+        PlaybackSelection.clear();
 
         BUTTON_SIZE = Utils.convertDpToPixel(requireContext(), 40);
 
@@ -421,6 +425,14 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
                     versions = new ArrayList<>(mBaseItem.getMediaSources());
                 }
                 if (versions != null) addVersionsMenu(v);
+                return kotlin.Unit.INSTANCE;
+            });
+            mDetailsOverviewRow.setOnAudioClick(v -> {
+                showStreamMenu(v, MediaStreamType.AUDIO);
+                return kotlin.Unit.INSTANCE;
+            });
+            mDetailsOverviewRow.setOnSubtitleClick(v -> {
+                showStreamMenu(v, MediaStreamType.SUBTITLE);
                 return kotlin.Unit.INSTANCE;
             });
 
@@ -1080,6 +1092,49 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
         }
     }
 
+    private static final int NO_SUBTITLES_MENU_ID = 100000;
+
+    /**
+     * Lets the user pick an audio or subtitle track of the selected version. The choice is shown on
+     * the page and handed to the player through {@link PlaybackSelection}.
+     */
+    private void showStreamMenu(View anchor, MediaStreamType type) {
+        List<MediaSourceInfo> sources = mDetailsOverviewRow.getItem().getMediaSources();
+        int sourceIndex = mDetailsOverviewRow.getSelectedMediaSourceIndex();
+        if (sources == null || sourceIndex >= sources.size() || sources.get(sourceIndex).getMediaStreams() == null) return;
+
+        boolean isSubtitle = type == MediaStreamType.SUBTITLE;
+        MediaSourceInfo source = sources.get(sourceIndex);
+        Integer current = isSubtitle ? mDetailsOverviewRow.getSelectedSubtitleIndex() : mDetailsOverviewRow.getSelectedAudioIndex();
+        if (current == null) current = isSubtitle ? source.getDefaultSubtitleStreamIndex() : source.getDefaultAudioStreamIndex();
+
+        PopupMenu menu = new PopupMenu(requireContext(), anchor, Gravity.END);
+        if (isSubtitle) {
+            MenuItem none = menu.getMenu().add(Menu.NONE, NO_SUBTITLES_MENU_ID, Menu.NONE, R.string.lbl_none);
+            none.setCheckable(true);
+            none.setChecked(current == null || current < 0);
+        }
+        for (MediaStream stream : source.getMediaStreams()) {
+            if (stream.getType() != type) continue;
+            MenuItem entry = menu.getMenu().add(Menu.NONE, stream.getIndex(), Menu.NONE, MyDetailsOverviewRowPresenterKt.streamTitle(stream));
+            entry.setCheckable(true);
+            entry.setChecked(current != null && current == stream.getIndex());
+        }
+        menu.getMenu().setGroupCheckable(Menu.NONE, true, true);
+
+        menu.setOnMenuItemClickListener(menuItem -> {
+            int chosen = menuItem.getItemId() == NO_SUBTITLES_MENU_ID ? -1 : menuItem.getItemId();
+            if (isSubtitle) mDetailsOverviewRow.setSelectedSubtitleIndex(chosen);
+            else mDetailsOverviewRow.setSelectedAudioIndex(chosen);
+
+            PlaybackSelection.set(mBaseItem.getId(), mDetailsOverviewRow.getSelectedAudioIndex(), mDetailsOverviewRow.getSelectedSubtitleIndex());
+            mDorPresenter.getViewHolder().setItem(mDetailsOverviewRow);
+            anchor.requestFocus();
+            return true;
+        });
+        menu.show();
+    }
+
     private void addVersionsMenu(View v) {
         PopupMenu menu = new PopupMenu(requireContext(), v, Gravity.END);
 
@@ -1093,6 +1148,9 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
             @Override
             public boolean onMenuItemClick(MenuItem menuItem) {
                 mDetailsOverviewRow.setSelectedMediaSourceIndex(menuItem.getItemId());
+                mDetailsOverviewRow.setSelectedAudioIndex(null);
+                mDetailsOverviewRow.setSelectedSubtitleIndex(null);
+                PlaybackSelection.clear();
                 FullDetailsFragmentHelperKt.getItem(FullDetailsFragment.this, UUIDSerializerKt.toUUID(versions.get(mDetailsOverviewRow.getSelectedMediaSourceIndex()).getId()), item -> {
                     if (item == null) return null;
 

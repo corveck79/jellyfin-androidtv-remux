@@ -664,6 +664,17 @@ public class PlaybackController implements PlaybackControllerNotifiable {
             // No saved preference, use server default
             mCurrentOptions.setSubtitleStreamIndex(response.getMediaSource().getDefaultSubtitleStreamIndex());
         }
+        // Tracks picked on the details page take precedence over saved preferences and server defaults
+        PlaybackSelection.Selection selection = PlaybackSelection.get(item.getId());
+        if (selection != null) {
+            Integer selectedSubtitle = selection.getSubtitleStreamIndex();
+            if (selectedSubtitle != null) {
+                mCurrentOptions.setSubtitleStreamIndex(selectedSubtitle < 0 ? null : selectedSubtitle);
+            }
+            if (selection.getAudioStreamIndex() != null) {
+                mDefaultAudioIndex = selection.getAudioStreamIndex();
+            }
+        }
         setDefaultAudioIndex(response);
         Timber.i("default audio index set to %s remote default %s", mDefaultAudioIndex, response.getMediaSource().getDefaultAudioStreamIndex());
         Timber.i("default sub index set to %s remote default %s", mCurrentOptions.getSubtitleStreamIndex(), response.getMediaSource().getDefaultSubtitleStreamIndex());
