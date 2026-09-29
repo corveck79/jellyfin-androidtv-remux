@@ -636,10 +636,11 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
                     addItemRow(adapter, additionalPartsAdapter, 0, getString(R.string.lbl_additional_parts));
                 }
 
-                if (mBaseItem.getSeasonId() != null && mBaseItem.getIndexNumber() != null) {
-                    // query index is zero-based but episode no is not
-                    ItemRowAdapter nextAdapter = new ItemRowAdapter(requireContext(), BrowsingUtils.createNextEpisodesRequest(mBaseItem.getSeasonId(), mBaseItem.getIndexNumber()), 0, false, true, new CardPresenter(true, 120), adapter);
-                    addItemRow(adapter, nextAdapter, 5, getString(R.string.lbl_next_episode));
+                if (mBaseItem.getSeasonId() != null) {
+                    // All episodes of the season, like the web client's "More from Season X" row
+                    ItemRowAdapter seasonAdapter = new ItemRowAdapter(requireContext(), BrowsingUtils.createSeasonEpisodesRequest(mBaseItem.getSeasonId()), 0, false, true, new CardPresenter(true, 120), adapter);
+                    String seasonName = mBaseItem.getSeasonName();
+                    addItemRow(adapter, seasonAdapter, 5, seasonName != null ? getString(R.string.lbl_more_from, seasonName) : getString(R.string.lbl_episodes));
                 }
 
                 //Guest stars

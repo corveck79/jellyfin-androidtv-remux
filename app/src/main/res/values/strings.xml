@@ -76,6 +76,7 @@
     <string name="lbl_videos">Videos</string>
     <string name="lbl_recordings">Recordings</string>
     <string name="lbl_none">None</string>
+    <string name="lbl_more_from">More from %1$s</string>
     <string name="msg_video_playback_error">"Video playback error - "</string>
     <string name="lbl_bracket_unknown">Unknown</string>
     <string name="lbl_trailer">"Trailer "</string>

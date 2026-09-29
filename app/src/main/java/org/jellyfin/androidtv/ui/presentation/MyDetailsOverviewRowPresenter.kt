@@ -53,7 +53,9 @@ class MyDetailsOverviewRowPresenter(
 			setSource(row)
 
 			binding.fdButtonRow.removeAllViews()
-			for (button in row.actions) {
+			for ((index, button) in row.actions.withIndex()) {
+				// Only the primary (play/resume) button keeps its label, the rest are plain icons
+				button.labelAlwaysVisible = index == 0
 				val parent = button.parent
 				if (parent is ViewGroup) parent.removeView(button)
 

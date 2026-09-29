@@ -1,6 +1,7 @@
 package org.jellyfin.androidtv.ui
 
 import android.content.Context
+import android.graphics.Rect
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.widget.FrameLayout
@@ -26,6 +27,25 @@ class TextUnderButton @JvmOverloads constructor(
 		if (AndroidVersion.isAtLeastO) defaultFocusHighlightEnabled = false
 	}
 
+	/**
+	 * When false the label is only shown while the button has focus, giving a row of plain icon
+	 * buttons like the web client. The label keeps its space so the row doesn't change height.
+	 */
+	var labelAlwaysVisible: Boolean = true
+		set(value) {
+			field = value
+			updateLabelVisibility()
+		}
+
+	private fun updateLabelVisibility() {
+		binding.label.alpha = if (labelAlwaysVisible || isFocused) LABEL_ALPHA else 0f
+	}
+
+	override fun onFocusChanged(gainFocus: Boolean, direction: Int, previouslyFocusedRect: Rect?) {
+		super.onFocusChanged(gainFocus, direction, previouslyFocusedRect)
+		updateLabelVisibility()
+	}
+
 	fun setLabel(text: String?) {
 		binding.label.isVisible = text != null
 		binding.label.text = text
@@ -42,6 +62,9 @@ class TextUnderButton @JvmOverloads constructor(
 	}
 
 	companion object {
+		private const val LABEL_ALPHA = .7f
+
+
 		@JvmStatic
 		@Suppress("LongParameterList")
 		fun create(
